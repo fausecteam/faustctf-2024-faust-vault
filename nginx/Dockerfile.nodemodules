@@ -1,0 +1,25 @@
+FROM faust.cs.fau.de:5000/faustvault-wasmpack as build-wasm
+
+WORKDIR /build
+
+COPY frontend /build
+
+RUN cd wasm-crypt && wasm-pack build --target web --out-dir pkg --mode no-install
+
+FROM node:alpine AS build
+WORKDIR /build
+
+COPY frontend /build
+
+# Required for npm install
+COPY --from=faust.cs.fau.de:5000/faustvault-frontend-deps ./pkg ./rsa/pkg
+COPY --from=build-wasm /build/wasm-crypt/pkg ./wasm-crypt/pkg
+
+RUN npm install
+
+# These are actually build locally, make sure that we don't accidentally use an old version
+RUN rm -r /build/node_modules/rsa /build/node_modules/wasm-crypt
+
+FROM scratch
+
+COPY --from=build /build/node_modules /

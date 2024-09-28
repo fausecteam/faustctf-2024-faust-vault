@@ -1,0 +1,7 @@
+dist_root
+frontend/dist
+frontend/node_modules/
+**/target
+nginx/frontend
+nginx/frontend/bundle*
+venv

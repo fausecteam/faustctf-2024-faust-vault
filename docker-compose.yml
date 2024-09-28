@@ -1,0 +1,81 @@
+version: "2.2"
+# ipv6 is not supported in version 3
+
+services:
+  faustvault_deps:
+    image: faust.cs.fau.de:5000/faustvault-deps
+    scale: 0
+    build:
+      context: faustvault
+      dockerfile: Dockerfile.deps
+  faustvault:
+    restart: unless-stopped
+    image: faust.cs.fau.de:5000/faustvault
+    init: true
+    build: faustvault
+    environment:
+      - DATABASE_URL=postgres://user:password@database:5432/faustvault_db?sslmode=disable
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - faust
+
+  database:
+    restart: unless-stopped
+    image: docker.io/postgres:alpine
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: faustvault_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d faustvault_db"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+    networks:
+      - faust
+
+  frontend-wasmpack:
+    scale: 0
+    image: faust.cs.fau.de:5000/faustvault-wasmpack
+    build:
+      context: frontend
+      dockerfile: Dockerfile.deps.deps
+  frontend-build-deps:
+    scale: 0
+    image: faust.cs.fau.de:5000/faustvault-frontend-deps
+    build:
+      context: frontend
+      dockerfile: Dockerfile.deps
+  frontend-nodemodules:
+    scale: 0
+    image: faust.cs.fau.de:5000/faustvault-nodemodules
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile.nodemodules
+
+  nginx:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    image: faust.cs.fau.de:5000/faustvault-nginx
+    ports:
+      - "5555:80"
+    depends_on:
+      - faustvault
+    networks:
+      - faust
+
+networks:
+  faust:
+    enable_ipv6: true
+    ipam:
+        driver: default
+        config:
+            - subnet: "fd42:d0ce:7331::/64"

@@ -1,0 +1,32 @@
+# Human-readable name of the service
+name: faust-vault
+# Name of the service for usage in paths, usernames etc.: Should only consist of lowercase alphanumeric
+# characters, must be identical to the (URL) project name of the GitLab repo
+slug: faust-vault
+authors:
+  - Benjamin Haag <benny.haag@fau.de>
+  - Daniel Tenbrinck <daniel.tenbrinck@googlemail.com>
+
+install:
+  container_images:
+    - faust.cs.fau.de:5000/faustvault-deps
+    - faust.cs.fau.de:5000/faustvault
+    - faust.cs.fau.de:5000/faustvault-wasmpack
+    - faust.cs.fau.de:5000/faustvault-frontend-deps
+    - faust.cs.fau.de:5000/faustvault-nodemodules
+    - faust.cs.fau.de:5000/faustvault-nginx
+    - docker.io/postgres:alpine
+    - docker.io/nginx:alpine
+    - docker.io/node:alpine
+
+checker:
+  script_path: checker/template.py
+  # Upper bound of how long the Checker Script takes to run (for a single team)
+  # Used for scheduling checks within a tick, executions taking longer *may* get terminated
+  max_duration: 60
+  debian_packages:
+    - chromium-driver
+    - python3-selenium
+  pip_packages:
+    - selenium-wire
+    - blinker==1.7.0 # dependency of selenium-wire, but incorrect version specified in pip dependencies :/

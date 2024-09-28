@@ -1,0 +1,4 @@
+FROM docker.io/rust:latest
+
+RUN apt update && apt install -y npm
+RUN cargo install wasm-pack

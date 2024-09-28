@@ -1,0 +1,10 @@
+FROM faust.cs.fau.de:5000/faustvault-wasmpack AS build
+WORKDIR /build
+
+COPY rsa /build/rsa
+
+RUN cd rsa && wasm-pack build --target web --out-dir pkg --mode no-install
+
+FROM scratch
+
+COPY --from=build /build/rsa/pkg ./pkg
